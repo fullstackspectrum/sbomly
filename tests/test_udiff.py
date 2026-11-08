@@ -164,3 +164,17 @@ def test_cli_negative_context(capsys):
     code, _, err = run(["diff", OLD, NEW, "-u", "-U", "-1"], capsys)
     assert code == 2
     assert "negative" in err
+
+
+def test_colour_terminal_diff_has_gutter_and_word_marks(cdx):
+    out = to_unified_text(cdx, context=1, colour=True)
+    plain = re.sub(r"\x1b\[[\d;]*m", "", out)
+    assert "6 │ + npm       debug" in plain
+    # The changed version is highlighted; the unchanged name isn't.
+    assert "\033[1;97;48;5;25m4.3.5\033[0m" in out
+    assert "\033[1;97;48;5;25mdebug" not in out
+
+
+def test_plain_terminal_diff_is_a_patch(cdx):
+    out = to_unified_text(cdx, context=1)
+    assert "│" not in out and "\033[" not in out

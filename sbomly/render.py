@@ -89,7 +89,11 @@ _COLOURS = {
 
 # The diff view keeps the convention everyone reads at a glance: removals in
 # red. Additions take the brand blue rather than green.
-_DIFF_COLOURS = {"bold": "1", "dim": "2", "del": "31", "add": "34"}
+_DIFF_COLOURS = {
+    "bold": "1", "dim": "2", "hunk": "94", "del": "31", "add": "34",
+    # Changed words: white on a dark red or dark blue (256-colour 88 and 25).
+    "del-mark": "1;97;48;5;88", "add-mark": "1;97;48;5;25",
+}
 
 
 def use_colour(stream=None) -> bool:
@@ -143,15 +147,45 @@ def to_text(d: Diff, colour: bool = False, limit: int = 25) -> str:
 
 
 def to_unified_text(d: Diff, context: int = 3, colour: bool = False) -> str:
-    styles = {"file": "bold", "hunk": "dim", "del": "del", "add": "add", "ctx": ""}
-    signs = {"file": "", "hunk": "", "del": "-", "add": "+", "ctx": " "}
-    out = []
-    for line in udiff.unified(d, context):
-        text = signs[line.kind] + line.text
-        style = styles[line.kind]
-        out.append(f"\033[{_DIFF_COLOURS[style]}m{text}\033[0m" if colour and style else text)
-    if not out:
+    """The component diff for a terminal.
+
+    Without colour it's a plain unified diff that patch(1) accepts. With
+    colour it reads like the HTML report's diff view: an old/new line-number
+    gutter, and the changed words highlighted within each -/+ pair.
+    """
+    lines = udiff.unified(d, context)
+    if not lines:
         return "No dependency changes.\n"
+    signs = {"file": "", "hunk": "", "del": "-", "add": "+", "ctx": " "}
+    if not colour:
+        return "\n".join(signs[ln.kind] + ln.text for ln in lines) + "\n"
+
+    def c(style: str, text: str) -> str:
+        return f"\033[{_DIFF_COLOURS[style]}m{text}\033[0m" if text else ""
+
+    marks: dict[int, list[tuple[str, bool]]] = {}
+    for i, j in udiff.pairs(lines).items():
+        marks[i], marks[j] = udiff.word_marks(lines[i].text, lines[j].text)
+    width = len(str(max(max(ln.old_no or 0, ln.new_no or 0) for ln in lines)))
+
+    out = []
+    for i, ln in enumerate(lines):
+        if ln.kind == "file":
+            out.append(c("bold", ln.text))
+            continue
+        if ln.kind == "hunk":
+            out.append(c("hunk", ln.text))
+            continue
+        gutter = c("dim", f"{ln.old_no or '':>{width}} {ln.new_no or '':>{width}} │")
+        if ln.kind == "ctx":
+            out.append(f"{gutter}   {c('dim', ln.text)}")
+            continue
+        base = ln.kind
+        if i in marks:
+            body = "".join(c(f"{base}-mark" if changed else base, t) for t, changed in marks[i])
+        else:
+            body = c(base, ln.text)
+        out.append(f"{gutter} {c(base, signs[ln.kind])} {body}")
     return "\n".join(out) + "\n"
 
 

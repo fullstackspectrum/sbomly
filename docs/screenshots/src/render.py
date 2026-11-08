@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT))
 from sbomly.diff import diff  # noqa: E402
 from sbomly.html import to_html  # noqa: E402
 from sbomly.parse import load  # noqa: E402
-from sbomly.render import to_text  # noqa: E402
+from sbomly.render import to_text, to_unified_text  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[1]
 CHROME = os.environ.get("CHROME", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
@@ -37,6 +37,9 @@ ANSI = {
     "94": "color:#8fb4ff",
     "38;5;209": "color:#ff8a3d",
     "31;1": "color:#ff4d5e;font-weight:700",
+    "31": "color:#ff4d5e",
+    "1;97;48;5;88": "color:#ffffff;font-weight:700;background:#8a1f2b",
+    "1;97;48;5;25": "color:#ffffff;font-weight:700;background:#1f4f9a",
 }
 
 LINE_HEIGHT = 22
@@ -73,6 +76,23 @@ def page_height(path: Path, width: int, fragment: str = "") -> int:
     return int(re.search(r"<title>(\d+)</title>", dom).group(1))
 
 
+def terminal(tmp: Path, output: str, command: str, out: Path) -> None:
+    """Capture CLI output as a terminal window in the brand's colours."""
+    body = ansi_to_html(output).rstrip("\n")
+    prompt = f'<span style="color:#646f7f">$</span> {html.escape(command)}'
+    lines = 2 + body.count("\n") + 1
+    page = tmp / f"{out.stem}.html"
+    page.write_text(f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+@font-face {{ font-family: 'JetBrains Mono'; font-weight: 100 800; src: url({(FONTS / 'jetbrains-mono-var.woff2').as_uri()}); }}
+html, body {{ margin: 0; background: #10151d; }}
+pre {{ margin: 0; padding: {PAD}px; font: 14px/{LINE_HEIGHT}px 'JetBrains Mono', monospace; color: #c9d0db; white-space: pre; }}
+</style></head><body><pre>{prompt}
+
+{body}</pre></body></html>""", encoding="utf-8")
+    chrome(page.as_uri(), out, 980, lines * LINE_HEIGHT + PAD * 2, 2)
+
+
 def main() -> None:
     fixtures = ROOT / "tests" / "fixtures"
     old, new = load(str(fixtures / "cdx-old.json")), load(str(fixtures / "cdx-new.json"))
@@ -83,20 +103,10 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
 
-        body = ansi_to_html(to_text(result, colour=True)).rstrip("\n")
-        prompt = ('<span style="color:#646f7f">$</span> sbomly diff '
-                  f"{old.source} {new.source}")
-        lines = 2 + body.count("\n") + 1
-        width, height = 980, lines * LINE_HEIGHT + PAD * 2
-        (tmp_path / "terminal.html").write_text(f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>
-@font-face {{ font-family: 'JetBrains Mono'; font-weight: 100 800; src: url({(FONTS / 'jetbrains-mono-var.woff2').as_uri()}); }}
-html, body {{ margin: 0; background: #10151d; }}
-pre {{ margin: 0; padding: {PAD}px; font: 14px/{LINE_HEIGHT}px 'JetBrains Mono', monospace; color: #c9d0db; white-space: pre; }}
-</style></head><body><pre>{prompt}
-
-{body}</pre></body></html>""", encoding="utf-8")
-        chrome((tmp_path / "terminal.html").as_uri(), OUT / "terminal.png", width, height, 2)
+        terminal(tmp_path, to_text(result, colour=True), f"sbomly diff {old.source} {new.source}",
+                 OUT / "terminal.png")
+        terminal(tmp_path, to_unified_text(result, context=1, colour=True),
+                 f"sbomly diff {old.source} {new.source} -u -U 1", OUT / "terminal-diff.png")
 
         report = tmp_path / "report.html"
         report.write_text(to_html(result), encoding="utf-8")
@@ -112,7 +122,7 @@ pre {{ margin: 0; padding: {PAD}px; font: 14px/{LINE_HEIGHT}px 'JetBrains Mono',
         height = page_height(diff_page, 1200, "#diff") + 24
         chrome(diff_page.as_uri() + "#diff", OUT / "diff.png", 1200, height, 1.5)
 
-    print(f"wrote terminal.png, report.png and diff.png to {OUT}")
+    print(f"wrote terminal.png, terminal-diff.png, report.png and diff.png to {OUT}")
 
 
 if __name__ == "__main__":

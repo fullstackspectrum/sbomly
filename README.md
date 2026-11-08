@@ -56,6 +56,10 @@ sbomly diff old.json new.json -u        # 3 lines of context
 sbomly diff old.json new.json -u -U 0   # changes only
 ```
 
+![Unified diff in the terminal from sbomly diff -u](docs/screenshots/terminal-diff.png)
+
+In a colour terminal, the diff gets an old/new line-number gutter and highlights the words that changed in each `-`/`+` pair. When piped, or with `--no-color`, it's a plain unified diff that `patch` and other diff tools accept.
+
 Each line shows the name, version and licence. A digest or supplier is added only where it changed, so a same-version finding still shows up as a `-`/`+` pair. Lines come from Sbomly's own comparison rather than the raw files, so anything it treats as equivalent, like licence term order or a new distro qualifier, stays as context instead of showing up as noise. The output is a valid patch.
 
 The HTML report has the same diff behind a `table` / `diff` toggle, with line numbers and the changed words highlighted. Add `#diff` to the report's URL to open it on the diff view. With `-u`, the Markdown output also gets a ```` ```diff ```` block, which GitHub colours in PR comments.
