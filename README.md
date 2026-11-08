@@ -1,3 +1,9 @@
+[![Sbomly: what changed between two SBOMs, and what to check.](docs/brand/readme-banner.png)](https://github.com/fullstackspectrum/sbomly)
+
+[![CI](https://img.shields.io/github/actions/workflow/status/fullstackspectrum/sbomly/build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&color=4f8cff&labelColor=10151d)](https://github.com/fullstackspectrum/sbomly/actions/workflows/build.yml)
+[![Python](https://img.shields.io/badge/python-3.10%2B-f5c84c?style=for-the-badge&logo=python&logoColor=white&labelColor=10151d)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-646f7f?style=for-the-badge&labelColor=10151d)](LICENSE)
+
 # Sbomly
 
 **See what changed between two SBOMs, and what deserves a closer look.**

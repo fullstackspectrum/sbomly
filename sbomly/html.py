@@ -12,14 +12,16 @@ from . import __version__
 from .diff import CHANGE_KINDS, Diff
 from .render import CHANGE_TITLES, FINDING_TITLES, headline, sbom_label
 
+# docs/brand/sbomly-icon.svg, inlined so the report stays self-contained.
+# Keep the two in sync.
 _FAVICON_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
-    '<rect width="32" height="32" rx="6" fill="#0a0d12"/>'
-    '<rect x="4" y="15" width="3.5" height="8" rx="1" fill="#4f8cff"/>'
-    '<rect x="9.5" y="11" width="3.5" height="12" rx="1" fill="#8fb4ff"/>'
-    '<rect x="15" y="7" width="3.5" height="16" rx="1" fill="#f5c84c"/>'
-    '<rect x="20.5" y="11" width="3.5" height="12" rx="1" fill="#ff8a3d"/>'
-    '<rect x="26" y="15" width="3.5" height="8" rx="1" fill="#ff4d5e"/>'
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+    '<rect width="64" height="64" rx="14" fill="#0a0d12"/>'
+    '<rect x="25" y="11" width="28" height="28" rx="6" fill="#0a0d12" stroke="#4f8cff" stroke-width="3.5"/>'
+    '<rect x="18" y="18" width="28" height="28" rx="6" fill="#0a0d12" stroke="#f5c84c" stroke-width="3.5"/>'
+    '<rect x="11" y="25" width="28" height="28" rx="6" fill="#0a0d12" stroke="#eef1f6" stroke-width="3.5"/>'
+    '<path d="M19.5 35.5h11M25 30v11M19.5 47.5h11" fill="none" stroke="#ff4d5e" '
+    'stroke-width="3" stroke-linecap="round"/>'
     '</svg>'
 )
 
