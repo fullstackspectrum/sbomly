@@ -182,3 +182,47 @@ def test_cli_no_command(capsys):
     code, out, _ = run([], capsys)
     assert code == 2
     assert "diff" in out
+
+
+# ── Help ──────────────────────────────────────────────────────────────
+
+
+def test_diff_help_is_grouped(capsys, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "100")
+    code, out, _ = run(["diff", "--help"], capsys)
+    assert code == 0
+    for heading in ("arguments:", "output:", "diff view:", "ci gating:", "display:",
+                    "fail-on categories:", "exit codes:", "examples:"):
+        assert f"\n{heading}\n" in out
+    # Each flag once, metavar at the end.
+    assert "  -U, --context N " in out
+    assert "\033[" not in out  # not a terminal, so no colour
+
+
+def test_help_columns_line_up(capsys, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "100")
+    _, out, _ = run(["diff", "--help"], capsys)
+    columns = {line.index(desc) for line in out.splitlines()
+               for desc in ("write the full diff as JSON", "a component's supplier changed",
+                            "a --fail-on category occurred")
+               if desc in line}
+    assert len(columns) == 1
+
+
+def test_root_help_lists_commands_without_placeholder(capsys):
+    code, out, _ = run(["--help"], capsys)
+    assert code == 0
+    assert "  diff " in out and "\n  COMMAND\n" not in out
+
+
+def test_help_colour_on_a_terminal(capsys, monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    _, out, _ = run(["diff", "--help"], capsys)
+    assert "\033[94m--fail-on\033[0m" in out
+    assert "\033[33mN\033[0m" in out
+
+
+def test_version(capsys):
+    code, out, _ = run(["--version"], capsys)
+    assert code == 0 and out.startswith("sbomly ")
