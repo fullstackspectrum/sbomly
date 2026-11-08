@@ -21,6 +21,8 @@ Sbomly has no runtime dependencies and needs Python 3.10 or later.
 
 > Sbomly is a sibling of [Vulnly](https://github.com/fullstackspectrum/Vulnly) and part of [Full-Stack-Spectrum](https://fullstackspectrum.com/): small open-source tools that turn noisy supply chain data into decisions.
 
+![Sbomly HTML report comparing two releases of payments-api](docs/screenshots/report.png)
+
 ## Install
 
 ```bash
@@ -33,30 +35,19 @@ pipx install sbomly     # or: pip install sbomly
 sbomly diff old.cdx.json new.cdx.json
 ```
 
-```text
-sbomly: payments-api 2.3.0  →  payments-api 2.4.0
-9 → 10 components, 4 unchanged
+Findings come first, most serious at the top, then each kind of component change:
 
-2 added, 1 removed, 3 upgraded, 1 downgraded, 5 findings to review.
-
-Findings
-  integrity axios 1.6.0  Same version, different SHA256 digest: the artifact was rebuilt or replaced
-  copyleft  readline-sync 1.4.10  New dependency under strong copyleft licence (GPL-3.0-only)
-  copyleft  sharp 0.33.0  Now weak copyleft (Apache-2.0 AND LGPL-3.0-or-later)
-  licence   sharp 0.33.0  Licence changed from Apache-2.0 to Apache-2.0 AND LGPL-3.0-or-later
-  supplier  @acme/logger 1.2.0  Supplier changed from Acme Inc to Acme Holdings Ltd
-
-Added (2)
-  + chalk 5.3.0
-  + readline-sync 1.4.10
-...
-```
+![Terminal summary from sbomly diff](docs/screenshots/terminal.png)
 
 Write reports alongside the terminal summary:
 
 ```bash
 sbomly diff old.json new.json --html report.html --markdown pr.md --json diff.json
 ```
+
+The HTML report, shown at the top of this page, is a single file with its fonts embedded, so it opens offline and can be attached to a CI run or a ticket. Search and the change-type filters work without a network connection, and `--theme light` gives a light version for printing.
+
+*Screenshots show sample data from `tests/fixtures`. To regenerate them, run `python docs/screenshots/src/render.py`.*
 
 Read one SBOM from stdin, for example straight from a generator:
 

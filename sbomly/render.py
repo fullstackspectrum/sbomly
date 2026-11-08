@@ -78,9 +78,12 @@ def to_json(d: Diff, fail_on: set[str] | None = None) -> str:
 
 # ── Terminal ──────────────────────────────────────────────────────────
 
+# Closest terminal colours to the Full-Stack-Spectrum palette: blue for new,
+# bright blue (blue-soft) for upgrades, 256-colour 209 for orange, red only
+# for the integrity finding.
 _COLOURS = {
-    "added": "32", "removed": "31", "upgraded": "34", "downgraded": "33", "changed": "35",
-    "hash": "31;1", "copyleft": "33", "license": "33", "supplier": "35",
+    "added": "34", "removed": "2", "upgraded": "94", "downgraded": "38;5;209", "changed": "33",
+    "hash": "31;1", "copyleft": "38;5;209", "license": "33", "supplier": "33",
     "dim": "2", "bold": "1",
 }
 
