@@ -59,7 +59,7 @@ def chrome(url: str, out: Path, width: int, height: int, scale: float) -> None:
     )
 
 
-def page_height(path: Path, width: int) -> int:
+def page_height(path: Path, width: int, fragment: str = "") -> int:
     """Full scroll height of a page, so the screenshot shows all of it."""
     probe = path.with_name("probe.html")
     probe.write_text(path.read_text(encoding="utf-8").replace(
@@ -67,7 +67,7 @@ def page_height(path: Path, width: int) -> int:
         encoding="utf-8")
     dom = subprocess.run(
         [CHROME, "--headless=new", "--disable-gpu", f"--window-size={width},900",
-         "--virtual-time-budget=2000", "--dump-dom", probe.as_uri()],
+         "--virtual-time-budget=2000", "--dump-dom", probe.as_uri() + fragment],
         check=True, capture_output=True, text=True,
     ).stdout
     return int(re.search(r"<title>(\d+)</title>", dom).group(1))
@@ -102,7 +102,17 @@ pre {{ margin: 0; padding: {PAD}px; font: 14px/{LINE_HEIGHT}px 'JetBrains Mono',
         report.write_text(to_html(result), encoding="utf-8")
         chrome(report.as_uri(), OUT / "report.png", 1200, page_height(report, 1200) + 84, 1.5)
 
-    print(f"wrote {OUT / 'terminal.png'} and {OUT / 'report.png'}")
+        # The diff view on its own: the same report opened at #diff with
+        # everything above the changes section hidden.
+        only_changes = (".hero, .stats-row, main > section:first-of-type, footer { display: none; }"
+                        "main { padding-top: 2rem; }")
+        diff_page = tmp_path / "diff.html"
+        diff_page.write_text(to_html(result).replace("</style>", only_changes + "</style>", 1),
+                             encoding="utf-8")
+        height = page_height(diff_page, 1200, "#diff") + 24
+        chrome(diff_page.as_uri() + "#diff", OUT / "diff.png", 1200, height, 1.5)
+
+    print(f"wrote terminal.png, report.png and diff.png to {OUT}")
 
 
 if __name__ == "__main__":

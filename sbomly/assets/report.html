@@ -343,6 +343,52 @@
     td.lic { font-family: var(--font-mono); font-size: 0.75rem; color: var(--cs-muted); overflow-wrap: anywhere; }
     tr.hidden { display: none; }
 
+    /* ── Diff view ──────────────────────────────────────────────── */
+    .view-toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    [hidden] { display: none !important; }
+    .udiff {
+      background: var(--cs-surface);
+      border: 1px solid var(--cs-border);
+      border-radius: 10px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+    .udiff-file {
+      padding: 0.6rem 1rem;
+      background: var(--cs-surface2);
+      border-bottom: 1px solid var(--cs-border);
+      color: var(--cs-muted);
+      overflow-wrap: anywhere;
+    }
+    .udiff-body { overflow-x: auto; }
+    /* Rows stretch to the longest line so tints run the full width. */
+    .udiff-lines { min-width: max-content; }
+    .dl { display: grid; grid-template-columns: 3.25rem 3.25rem 1.5rem 1fr; white-space: pre; }
+    .dl .ln {
+      color: var(--cs-faint);
+      text-align: right;
+      padding-right: 0.75rem;
+      user-select: none;
+      font-variant-numeric: tabular-nums;
+    }
+    .dl .sg { text-align: center; user-select: none; }
+    .dl .tx { padding-right: 1.5rem; color: var(--cs-text); }
+    .dl.ctx .tx { color: var(--cs-muted); }
+    .dl.hunk { background: rgba(var(--c-soft-rgb), 0.06); }
+    .dl.hunk .tx { color: var(--c-soft); padding: 0.15rem 0; }
+    /* The one place red marks change rather than alarm: removals, as every
+     * diff reader expects. Additions take the brand blue, not green. */
+    .dl.add { background: rgba(var(--c-blue-rgb), 0.10); }
+    .dl.add .sg { color: var(--c-blue); font-weight: 700; }
+    .dl.add mark { background: rgba(var(--c-blue-rgb), 0.32); color: inherit; border-radius: 2px; }
+    .dl.del { background: rgba(var(--c-red-rgb), 0.09); }
+    .dl.del .sg { color: var(--c-red); font-weight: 700; }
+    .dl.del mark { background: rgba(var(--c-red-rgb), 0.30); color: inherit; border-radius: 2px; }
+    .udiff-note { margin-top: 0.75rem; font-size: 0.8rem; color: var(--cs-muted); }
+    .udiff-note code { font-family: var(--font-mono); font-size: 0.75rem; }
+
     /* ── Footer ─────────────────────────────────────────────────── */
     footer {
       border-top: 1px solid var(--cs-border);
@@ -413,6 +459,27 @@
       if (saved === 'light') root.setAttribute('data-theme', 'light');
       if (saved === 'dark') root.removeAttribute('data-theme');
     } catch (e) {}
+
+    // Table or diff view. #diff in the URL opens the diff, so a link can
+    // point straight at it; otherwise the last choice is remembered.
+    var views = { table: document.getElementById('viewTable'), diff: document.getElementById('viewDiff') };
+    var viewButtons = Array.prototype.slice.call(document.querySelectorAll('[data-view]'));
+    function showView(name) {
+      if (!views[name]) return;
+      Object.keys(views).forEach(function (k) { views[k].hidden = k !== name; });
+      viewButtons.forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-view') === name ? 'true' : 'false'); });
+    }
+    viewButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var name = btn.getAttribute('data-view');
+        showView(name);
+        try { localStorage.setItem('sbomly-view', name); } catch (e) {}
+      });
+    });
+    if (location.hash === '#diff') showView('diff');
+    else {
+      try { var savedView = localStorage.getItem('sbomly-view'); if (savedView) showView(savedView); } catch (e) {}
+    }
 
     var table = document.getElementById('changesTable');
     if (!table) return;

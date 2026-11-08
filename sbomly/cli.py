@@ -9,7 +9,7 @@ from pathlib import Path
 from . import __version__
 from .diff import FAIL_ON_CHOICES, diff
 from .parse import SbomError, load
-from .render import to_json, to_markdown, to_text, use_colour
+from .render import to_json, to_markdown, to_text, to_unified_text, use_colour
 
 # Exit codes: 0 clean (or nothing gated), 1 a --fail-on category was hit,
 # 2 bad usage or unreadable input. argparse already uses 2 for usage errors.
@@ -54,6 +54,11 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--json", metavar="FILE", type=Path, help="write the full diff as JSON")
     d.add_argument("--fail-on", metavar="LIST", type=_fail_on, default=set(),
                    help="exit 1 if any of these comma-separated categories occur")
+    d.add_argument("-u", "--unified", action="store_true",
+                   help="show a unified diff of the component lists, like diff -u; "
+                        "also adds it to --markdown output")
+    d.add_argument("-U", "--context", type=int, default=3, metavar="N",
+                   help="unchanged components shown around each change in the diff (default: 3)")
     d.add_argument("--title", default="", help="title for the HTML and Markdown reports")
     d.add_argument("--theme", choices=("dark", "light"), default="dark", help="HTML report theme (default: dark)")
     d.add_argument("--limit", type=int, default=100, metavar="N",
@@ -74,14 +79,18 @@ def _write(path: Path, content: str) -> None:
 def run_diff(args: argparse.Namespace) -> int:
     if args.old == "-" and args.new == "-":
         raise SbomError("only one SBOM can come from stdin")
+    if args.context < 0:
+        raise SbomError("--context can't be negative")
     result = diff(load(args.old), load(args.new))
+    md_context = args.context if args.unified else None
+    colour = use_colour() and not args.no_color
 
     if args.html:
         from .html import to_html  # Only pay for loading the fonts when asked.
 
-        _write(args.html, to_html(result, theme=args.theme, title=args.title))
+        _write(args.html, to_html(result, theme=args.theme, title=args.title, context=args.context))
     if args.markdown:
-        _write(args.markdown, to_markdown(result, limit=args.limit, title=args.title))
+        _write(args.markdown, to_markdown(result, limit=args.limit, title=args.title, context=md_context))
     if args.json:
         _write(args.json, to_json(result, args.fail_on))
 
@@ -89,9 +98,11 @@ def run_diff(args: argparse.Namespace) -> int:
         if args.format == "json":
             sys.stdout.write(to_json(result, args.fail_on))
         elif args.format == "markdown":
-            sys.stdout.write(to_markdown(result, limit=args.limit, title=args.title))
+            sys.stdout.write(to_markdown(result, limit=args.limit, title=args.title, context=md_context))
+        elif args.unified:
+            sys.stdout.write(to_unified_text(result, context=args.context, colour=colour))
         else:
-            sys.stdout.write(to_text(result, colour=use_colour() and not args.no_color, limit=args.limit))
+            sys.stdout.write(to_text(result, colour=colour, limit=args.limit))
 
     hits = result.triggered(args.fail_on)
     if hits:

@@ -7,7 +7,7 @@ import os
 import sys
 from dataclasses import asdict
 
-from . import __version__
+from . import __version__, udiff
 from .diff import CHANGE_KINDS, FINDING_KINDS, Diff
 from .model import Sbom
 
@@ -87,6 +87,10 @@ _COLOURS = {
     "dim": "2", "bold": "1",
 }
 
+# The diff view keeps the convention everyone reads at a glance: removals in
+# red. Additions take the brand blue rather than green.
+_DIFF_COLOURS = {"bold": "1", "dim": "2", "del": "31", "add": "34"}
+
 
 def use_colour(stream=None) -> bool:
     stream = stream or sys.stdout
@@ -138,6 +142,19 @@ def to_text(d: Diff, colour: bool = False, limit: int = 25) -> str:
     return "\n".join(lines) + "\n"
 
 
+def to_unified_text(d: Diff, context: int = 3, colour: bool = False) -> str:
+    styles = {"file": "bold", "hunk": "dim", "del": "del", "add": "add", "ctx": ""}
+    signs = {"file": "", "hunk": "", "del": "-", "add": "+", "ctx": " "}
+    out = []
+    for line in udiff.unified(d, context):
+        text = signs[line.kind] + line.text
+        style = styles[line.kind]
+        out.append(f"\033[{_DIFF_COLOURS[style]}m{text}\033[0m" if colour and style else text)
+    if not out:
+        return "No dependency changes.\n"
+    return "\n".join(out) + "\n"
+
+
 # ── Markdown ──────────────────────────────────────────────────────────
 
 # GitHub rejects comments over 65,536 characters. Stop adding rows well
@@ -161,7 +178,8 @@ def _code(text: str) -> str:
     return f"`{text}`"
 
 
-def to_markdown(d: Diff, limit: int = 100, title: str = "") -> str:
+def to_markdown(d: Diff, limit: int = 100, title: str = "", context: int | None = None) -> str:
+    """context: include a unified diff with this many context lines; None leaves it out."""
     out: list[str] = []
     out.append(f"### {_md(title) if title else 'SBOM diff'}")
     out.append("")
@@ -209,6 +227,27 @@ def to_markdown(d: Diff, limit: int = 100, title: str = "") -> str:
         for f in d.findings
     ]
     section("Findings to review", "| Type | Package | Version | Detail |", finding_rows, True)
+
+    if context is not None and d.has_changes:
+        # GitHub colours a ```diff block red and green. Backticks are
+        # swapped out so a component name can't close the fence early.
+        diff_lines = [
+            {"file": "", "hunk": "", "del": "-", "add": "+", "ctx": " "}[ln.kind] + ln.text.replace("`", "'")
+            for ln in udiff.unified(d, context)
+        ]
+        block = ["<details open>", "<summary><strong>Diff</strong></summary>", "", "```diff"]
+        budget = MARKDOWN_BUDGET - size - 2_000  # leave room for the change tables
+        used = 0
+        for line in diff_lines:
+            if used + len(line) + 1 > budget:
+                block.append("… diff truncated to fit GitHub's size limit")
+                truncated = True
+                break
+            block.append(line)
+            used += len(line) + 1
+        block += ["```", "", "</details>", ""]
+        out.extend(block)
+        size += sum(len(b) + 1 for b in block)
 
     for kind in CHANGE_KINDS:
         rows = []

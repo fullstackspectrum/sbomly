@@ -8,7 +8,7 @@ import re
 from html import escape
 from importlib import resources
 
-from . import __version__
+from . import __version__, udiff
 from .diff import CHANGE_KINDS, Diff
 from .render import CHANGE_TITLES, FINDING_TITLES, headline, sbom_label
 
@@ -90,9 +90,57 @@ def _version_cell(kind: str, old: str, new: str) -> str:
     return f'<span class="old">{escape(old)}</span><span class="sep">→</span>{escape(new)}'
 
 
-def _changes(d: Diff) -> str:
-    if not d.changes:
+def _diff_view(d: Diff, context: int) -> str:
+    lines = udiff.unified(d, context)
+    paired = udiff.pairs(lines)
+    marks: dict[int, list[tuple[str, bool]]] = {}
+    for i, j in paired.items():
+        marks[i], marks[j] = udiff.word_marks(lines[i].text, lines[j].text)
+
+    def text(i: int) -> str:
+        if i not in marks:
+            return escape(lines[i].text)
+        return "".join(f"<mark>{escape(t)}</mark>" if changed else escape(t) for t, changed in marks[i])
+
+    rows = []
+    files = [ln.text for ln in lines if ln.kind == "file"]
+    for i, ln in enumerate(lines):
+        if ln.kind == "file":
+            continue
+        if ln.kind == "hunk":
+            rows.append(f'<div class="dl hunk"><span class="ln"></span><span class="ln"></span>'
+                        f'<span class="sg"></span><span class="tx">{escape(ln.text)}</span></div>')
+            continue
+        sign = {"add": "+", "del": "−", "ctx": ""}[ln.kind]
+        rows.append(
+            f'<div class="dl {ln.kind}"><span class="ln">{ln.old_no or ""}</span>'
+            f'<span class="ln">{ln.new_no or ""}</span><span class="sg">{sign}</span>'
+            f'<span class="tx">{text(i)}</span></div>'
+        )
+    head = "".join(f"<div>{escape(f)}</div>" for f in files)
+    note = (f'<p class="udiff-note">One line per component: name, version, licence. '
+            f'A digest or supplier appears only where it changed. '
+            f'{context} unchanged line{"s" if context != 1 else ""} of context; '
+            f'<code>sbomly diff -u</code> prints the same diff in the terminal.</p>')
+    return (f'<div class="udiff"><div class="udiff-file">{head}</div>'
+            f'<div class="udiff-body"><div class="udiff-lines">{"".join(rows)}</div></div></div>{note}')
+
+
+def _changes(d: Diff, context: int = 3) -> str:
+    if not d.changes and not d.findings:
         return '<div class="empty">No components were added, removed or changed version.</div>'
+    toggle = ('<div class="view-toggle" role="group" aria-label="Change view">'
+              '<button type="button" class="filter-btn" data-view="table" aria-pressed="true">table</button>'
+              '<button type="button" class="filter-btn" data-view="diff" aria-pressed="false">diff</button>'
+              '</div>')
+    return (f'{toggle}<div id="viewTable">{_changes_table(d)}</div>'
+            f'<div id="viewDiff" hidden>{_diff_view(d, context)}</div>')
+
+
+def _changes_table(d: Diff) -> str:
+    if not d.changes:
+        return ('<div class="empty">No components were added, removed or changed version. '
+                'The diff view shows the same-version changes behind the findings.</div>')
     buttons = ['<button class="filter-btn" type="button" data-kind-filter="" aria-pressed="true">All</button>']
     for kind in CHANGE_KINDS:
         n = d.count(kind)
@@ -120,7 +168,7 @@ def _changes(d: Diff) -> str:
     )
 
 
-def to_html(d: Diff, theme: str = "dark", title: str = "") -> str:
+def to_html(d: Diff, theme: str = "dark", title: str = "", context: int = 3) -> str:
     template = _asset("report.html").decode("utf-8")
     flagged = sum(1 for f in d.findings if f.gating)
 
@@ -158,7 +206,7 @@ def to_html(d: Diff, theme: str = "dark", title: str = "") -> str:
         "NEW_CARD": _sbom_card("After", d.new),
         "STAT_CARDS": "".join(stats),
         "FINDINGS": _findings(d),
-        "CHANGES": _changes(d),
+        "CHANGES": _changes(d, context),
         "VERSION": escape(__version__),
         "REPORT_DATE": datetime.date.today().strftime("%d %b %Y"),
     })

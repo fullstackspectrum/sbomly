@@ -47,6 +47,21 @@ sbomly diff old.json new.json --html report.html --markdown pr.md --json diff.js
 
 The HTML report, shown at the top of this page, is a single file with its fonts embedded, so it opens offline and can be attached to a CI run or a ticket. Search and the change-type filters work without a network connection, and `--theme light` gives a light version for printing.
 
+### Diff view
+
+Prefer to read changes the way you read code? `-u` prints a unified diff of the two component lists, like `diff -u`, with one line per component sorted like a lockfile:
+
+```bash
+sbomly diff old.json new.json -u        # 3 lines of context
+sbomly diff old.json new.json -u -U 0   # changes only
+```
+
+Each line shows the name, version and licence. A digest or supplier is added only where it changed, so a same-version finding still shows up as a `-`/`+` pair. Lines come from Sbomly's own comparison rather than the raw files, so anything it treats as equivalent, like licence term order or a new distro qualifier, stays as context instead of showing up as noise. The output is a valid patch.
+
+The HTML report has the same diff behind a `table` / `diff` toggle, with line numbers and the changed words highlighted. Add `#diff` to the report's URL to open it on the diff view. With `-u`, the Markdown output also gets a ```` ```diff ```` block, which GitHub colours in PR comments.
+
+![The diff view in the HTML report](docs/screenshots/diff.png)
+
 *Screenshots show sample data from `tests/fixtures`. To regenerate them, run `python docs/screenshots/src/render.py`.*
 
 Read one SBOM from stdin, for example straight from a generator:
@@ -64,6 +79,8 @@ syft my-image:latest -o cyclonedx-json | sbomly diff baseline.cdx.json -
 | `--markdown FILE` | Write the Markdown summary |
 | `--json FILE` | Write the full diff as JSON |
 | `--fail-on LIST` | Exit 1 if any of these categories occur (see below) |
+| `-u, --unified` | Print a unified diff of the component lists instead of the summary, and add it to Markdown output |
+| `-U, --context N` | Unchanged components shown around each change in the diff (default 3) |
 | `--title TEXT` | Title for the HTML and Markdown reports |
 | `--theme dark\|light` | HTML report theme (default `dark`) |
 | `--limit N` | Rows per section in text and Markdown (default 100) |
