@@ -1,0 +1,172 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "payments-api-2.4.0",
+  "documentNamespace": "https://example.com/spdx/payments-api-2.4.0",
+  "creationInfo": {
+    "created": "2026-11-01T09:00:00Z",
+    "creators": [
+      "Organization: Anchore, Inc",
+      "Tool: syft-1.18.0"
+    ]
+  },
+  "packages": [
+    {
+      "name": "registry.example.com/payments-api",
+      "SPDXID": "SPDXRef-DocumentRoot-Image",
+      "versionInfo": "2.4.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "name": "openssl",
+      "SPDXID": "SPDXRef-Package-deb-openssl",
+      "versionInfo": "3.0.11-1~deb12u2",
+      "supplier": "Person: Debian Maintainers (debian@example.org)",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      ],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:deb/debian/openssl@3.0.11-1~deb12u2?arch=amd64&distro=debian-12.5"
+        }
+      ]
+    },
+    {
+      "name": "zlib1g",
+      "SPDXID": "SPDXRef-Package-deb-zlib1g",
+      "versionInfo": "1:1.2.13.dfsg-1",
+      "supplier": "Person: Debian Maintainers (debian@example.org)",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Zlib",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:deb/debian/zlib1g@1:1.2.13.dfsg-1?arch=amd64&distro=debian-12.5"
+        }
+      ]
+    },
+    {
+      "name": "curl",
+      "SPDXID": "SPDXRef-Package-deb-curl",
+      "versionInfo": "7.88.1-10+deb12u5",
+      "supplier": "Person: Debian Maintainers (debian@example.org)",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "curl",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6666666666666666666666666666666666666666666666666666666666666666"
+        }
+      ],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:deb/debian/curl@7.88.1-10+deb12u5?arch=amd64&distro=debian-12.5"
+        }
+      ]
+    },
+    {
+      "name": "libc6",
+      "SPDXID": "SPDXRef-Package-deb-libc6",
+      "versionInfo": "2.36-9+deb12u3",
+      "supplier": "Person: Debian Maintainers (debian@example.org)",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "LGPL-2.1-or-later",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:deb/debian/libc6@2.36-9+deb12u3?arch=amd64&distro=debian-12.5"
+        }
+      ]
+    },
+    {
+      "name": "tzdata",
+      "SPDXID": "SPDXRef-Package-deb-tzdata",
+      "versionInfo": "2024a-0+deb12u1",
+      "supplier": "Person: Debian Maintainers (debian@example.org)",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7777777777777777777777777777777777777777777777777777777777777777"
+        }
+      ],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:deb/debian/tzdata@2024a-0+deb12u1?arch=amd64&distro=debian-12.5"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-DocumentRoot-Image"
+    },
+    {
+      "spdxElementId": "SPDXRef-DocumentRoot-Image",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Package-deb-openssl"
+    },
+    {
+      "spdxElementId": "SPDXRef-DocumentRoot-Image",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Package-deb-zlib1g"
+    },
+    {
+      "spdxElementId": "SPDXRef-DocumentRoot-Image",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Package-deb-curl"
+    },
+    {
+      "spdxElementId": "SPDXRef-DocumentRoot-Image",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Package-deb-libc6"
+    },
+    {
+      "spdxElementId": "SPDXRef-DocumentRoot-Image",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Package-deb-tzdata"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sbomly"
+version = "0.1.0"
+description = "Diff two SBOMs (CycloneDX or SPDX) into a terminal summary, PR comment, JSON or offline HTML report, and gate CI on what changed"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "Colin Moynes", email = "dev@fullstackspectrum.com" },
+]
+keywords = ["sbom", "cyclonedx", "spdx", "diff", "supply-chain", "security", "license", "ci"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/fullstackspectrum/sbomly"
+Issues = "https://github.com/fullstackspectrum/sbomly/issues"
+
+[project.scripts]
+sbomly = "sbomly:main"
+
+[tool.setuptools.packages.find]
+include = ["sbomly*"]
+
+[tool.setuptools.package-data]
+sbomly = ["py.typed", "assets/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Import sbomly from the working tree so the suite runs without installing.
+pythonpath = ["."]

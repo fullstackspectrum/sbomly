@@ -1,0 +1,227 @@
+"""Text, JSON and Markdown renderings of a Diff."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from dataclasses import asdict
+
+from . import __version__
+from .diff import CHANGE_KINDS, FINDING_KINDS, Diff
+from .model import Sbom
+
+CHANGE_TITLES = {
+    "added": "Added",
+    "removed": "Removed",
+    "upgraded": "Upgraded",
+    "downgraded": "Downgraded",
+    "changed": "Changed version",
+}
+
+FINDING_TITLES = {
+    "hash": "Integrity",
+    "copyleft": "Copyleft",
+    "license": "Licence",
+    "supplier": "Supplier",
+}
+
+
+def sbom_label(sbom: Sbom) -> str:
+    """'payments-api 2.4.0', falling back to the file name."""
+    label = " ".join(p for p in (sbom.subject, sbom.subject_version) if p)
+    return label or sbom.source or "SBOM"
+
+
+def headline(d: Diff) -> str:
+    if not d.has_changes:
+        return "No dependency changes."
+    parts = [f"{d.count(k)} {k}" for k in CHANGE_KINDS if d.count(k)]
+    flagged = sum(1 for f in d.findings if f.gating)
+    if flagged:
+        parts.append(f"{flagged} finding{'s' if flagged != 1 else ''} to review")
+    return ", ".join(parts) + "."
+
+
+# ── JSON ──────────────────────────────────────────────────────────────
+
+
+def _sbom_meta(sbom: Sbom) -> dict:
+    return {
+        "source": sbom.source,
+        "format": sbom.format,
+        "specVersion": sbom.spec_version,
+        "subject": sbom.subject,
+        "subjectVersion": sbom.subject_version,
+        "created": sbom.created,
+        "tools": sbom.tools,
+        "components": len(sbom.components),
+    }
+
+
+def to_json(d: Diff, fail_on: set[str] | None = None) -> str:
+    doc = {
+        "tool": {"name": "sbomly", "version": __version__},
+        "old": _sbom_meta(d.old),
+        "new": _sbom_meta(d.new),
+        "summary": {
+            **{k: d.count(k) for k in CHANGE_KINDS + FINDING_KINDS},
+            "unchanged": d.unchanged,
+        },
+        "changes": [asdict(c) for c in d.changes],
+        "findings": [asdict(f) for f in d.findings],
+    }
+    if fail_on is not None:
+        doc["failOn"] = {"categories": sorted(fail_on), "triggered": d.triggered(fail_on)}
+    return json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
+
+
+# ── Terminal ──────────────────────────────────────────────────────────
+
+_COLOURS = {
+    "added": "32", "removed": "31", "upgraded": "34", "downgraded": "33", "changed": "35",
+    "hash": "31;1", "copyleft": "33", "license": "33", "supplier": "35",
+    "dim": "2", "bold": "1",
+}
+
+
+def use_colour(stream=None) -> bool:
+    stream = stream or sys.stdout
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR"):
+        return True
+    return hasattr(stream, "isatty") and stream.isatty()
+
+
+def to_text(d: Diff, colour: bool = False, limit: int = 25) -> str:
+    def c(style: str, text: str) -> str:
+        return f"\033[{_COLOURS[style]}m{text}\033[0m" if colour else text
+
+    lines = [
+        c("bold", f"sbomly: {sbom_label(d.old)}  →  {sbom_label(d.new)}"),
+        c("dim", f"{len(d.old.components)} → {len(d.new.components)} components, "
+                 f"{d.unchanged} unchanged"),
+        "",
+        headline(d),
+    ]
+
+    if d.findings:
+        lines += ["", c("bold", "Findings")]
+        for f in d.findings[:limit]:
+            tag = c(f.kind, f"{FINDING_TITLES[f.kind].lower():<9}")
+            note = "" if f.gating else c("dim", "  (info)")
+            lines.append(f"  {tag} {f.name} {c('dim', f.version)}  {f.message}{note}")
+        if len(d.findings) > limit:
+            lines.append(c("dim", f"  … and {len(d.findings) - limit} more"))
+
+    for kind in CHANGE_KINDS:
+        rows = [ch for ch in d.changes if ch.kind == kind]
+        if not rows:
+            continue
+        lines += ["", c("bold", f"{CHANGE_TITLES[kind]} ({len(rows)})")]
+        sign = {"added": "+", "removed": "-"}.get(kind, "~")
+        for ch in rows[:limit]:
+            if kind == "added":
+                version = ch.new_version
+            elif kind == "removed":
+                version = ch.old_version
+            else:
+                version = f"{ch.old_version} → {ch.new_version}"
+            lines.append(f"  {c(kind, sign)} {ch.name} {c('dim', version)}")
+        if len(rows) > limit:
+            lines.append(c("dim", f"  … and {len(rows) - limit} more"))
+
+    return "\n".join(lines) + "\n"
+
+
+# ── Markdown ──────────────────────────────────────────────────────────
+
+# GitHub rejects comments over 65,536 characters. Stop adding rows well
+# before that so the summary always makes it.
+MARKDOWN_BUDGET = 60_000
+
+
+def _md(text: str) -> str:
+    """Escape the characters that would break a table cell or inject markup."""
+    for ch in ("\\", "|", "`", "*", "_", "[", "]", "<", ">"):
+        text = text.replace(ch, "\\" + ch)
+    return text.replace("\n", " ")
+
+
+def _code(text: str) -> str:
+    # GitHub splits table cells on '|' even inside a code span, so it still
+    # needs escaping there; a backtick would end the span early.
+    if not text:
+        return "—"
+    text = " ".join(text.split()).replace("`", "").replace("|", "\\|")
+    return f"`{text}`"
+
+
+def to_markdown(d: Diff, limit: int = 100, title: str = "") -> str:
+    out: list[str] = []
+    out.append(f"### {_md(title) if title else 'SBOM diff'}")
+    out.append("")
+    out.append(f"**{_md(sbom_label(d.old))}** → **{_md(sbom_label(d.new))}** · "
+               f"{len(d.old.components)} → {len(d.new.components)} components · "
+               f"{d.unchanged} unchanged")
+    out.append("")
+    out.append(_md(headline(d)))
+    out.append("")
+
+    if d.has_changes:
+        out.append("| " + " | ".join(CHANGE_TITLES[k] for k in CHANGE_KINDS) + " | Findings |")
+        out.append("|" + "---:|" * (len(CHANGE_KINDS) + 1))
+        flagged = sum(1 for f in d.findings if f.gating)
+        out.append("| " + " | ".join(str(d.count(k)) for k in CHANGE_KINDS) + f" | {flagged} |")
+        out.append("")
+
+    size = sum(len(line) + 1 for line in out)
+    truncated = False
+
+    def section(heading: str, header: str, rows: list[str], open_: bool) -> None:
+        nonlocal size, truncated
+        if not rows:
+            return
+        block = [f"<details{' open' if open_ else ''}>",
+                 f"<summary><strong>{heading}</strong> ({len(rows)})</summary>", "",
+                 header, "|" + "---|" * header.count("|", 1)]
+        shown = 0
+        for row in rows[:limit]:
+            if size + sum(len(b) + 1 for b in block) + len(row) > MARKDOWN_BUDGET:
+                truncated = True
+                break
+            block.append(row)
+            shown += 1
+        if shown < len(rows):
+            block.append("")
+            block.append(f"_… {len(rows) - shown} more not shown. See the HTML or JSON report._")
+        block += ["", "</details>", ""]
+        out.extend(block)
+        size += sum(len(b) + 1 for b in block)
+
+    finding_rows = [
+        f"| {FINDING_TITLES[f.kind]}{'' if f.gating else ' (info)'} | {_md(f.name)} | "
+        f"{_code(f.version)} | {_md(f.message)} |"
+        for f in d.findings
+    ]
+    section("Findings to review", "| Type | Package | Version | Detail |", finding_rows, True)
+
+    for kind in CHANGE_KINDS:
+        rows = []
+        for ch in (c for c in d.changes if c.kind == kind):
+            if kind == "added":
+                rows.append(f"| {_md(ch.name)} | {_code(ch.new_version)} | {_md(ch.license) or '—'} |")
+            elif kind == "removed":
+                rows.append(f"| {_md(ch.name)} | {_code(ch.old_version)} | {_md(ch.license) or '—'} |")
+            else:
+                rows.append(f"| {_md(ch.name)} | {_code(ch.old_version)} | {_code(ch.new_version)} |")
+        header = ("| Package | Version | Licence |" if kind in ("added", "removed")
+                  else "| Package | From | To |")
+        section(CHANGE_TITLES[kind], header, rows, open_=False)
+
+    if truncated:
+        out.append("_This comment was shortened to fit GitHub's size limit._")
+        out.append("")
+    out.append(f"<sub>Generated by [sbomly](https://github.com/fullstackspectrum/sbomly) {__version__}</sub>")
+    return "\n".join(out) + "\n"

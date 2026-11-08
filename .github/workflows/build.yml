@@ -1,0 +1,40 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build dependencies
+        run: pip install build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Install package with dev extras
+        run: pip install "$(ls dist/*.whl)[dev]"
+
+      - name: Run tests
+        run: pytest -q
+
+      # Run from outside the checkout so the source tree is not importable —
+      # this exercises the installed wheel, including its bundled templates.
+      - name: Verify the installed wheel generates a report
+        working-directory: /tmp
+        run: sbomly diff "$GITHUB_WORKSPACE/tests/fixtures/cdx-old.json" "$GITHUB_WORKSPACE/tests/fixtures/cdx-new.json" --html report.html --markdown pr.md

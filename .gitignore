@@ -1,0 +1,10 @@
+dist/
+build/
+*.egg-info/
+__pycache__/
+.venv/
+.pytest_cache/
+reports/
+.DS_Store
+.vscode/
+.claude/

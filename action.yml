@@ -1,0 +1,72 @@
+name: Sbomly SBOM diff
+description: Diff two SBOMs, write the summary to the job page, and optionally fail on licence, integrity or supplier changes.
+author: Full-Stack-Spectrum
+branding:
+  icon: git-pull-request
+  color: blue
+
+inputs:
+  old:
+    description: Path to the baseline SBOM (CycloneDX or SPDX JSON).
+    required: true
+  new:
+    description: Path to the SBOM to compare against it.
+    required: true
+  fail-on:
+    description: Comma-separated categories that fail the step, e.g. "hash,copyleft". Empty never fails.
+    default: ""
+  title:
+    description: Title for the Markdown and HTML reports.
+    default: ""
+  html:
+    description: Where to write the HTML report.
+    default: sbomly-report.html
+  markdown:
+    description: Where to write the Markdown summary (handy for a PR comment step).
+    default: sbomly-diff.md
+  version:
+    description: Sbomly version to install from PyPI. Empty installs the latest.
+    default: ""
+
+outputs:
+  markdown:
+    description: Path to the Markdown summary.
+    value: ${{ steps.diff.outputs.markdown }}
+  html:
+    description: Path to the HTML report.
+    value: ${{ steps.diff.outputs.html }}
+
+runs:
+  using: composite
+  steps:
+    - id: diff
+      shell: bash
+      # Inputs go through the environment, never into the script text, so a
+      # crafted path or title can't inject shell.
+      env:
+        OLD: ${{ inputs.old }}
+        NEW: ${{ inputs.new }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        TITLE: ${{ inputs.title }}
+        HTML: ${{ inputs.html }}
+        MD: ${{ inputs.markdown }}
+        SBOMLY_VERSION: ${{ inputs.version }}
+      run: |
+        # A private venv works on every runner image, including ones whose
+        # system Python refuses pip installs.
+        python3 -m venv "$RUNNER_TEMP/sbomly"
+        "$RUNNER_TEMP/sbomly/bin/pip" install --quiet "sbomly${SBOMLY_VERSION:+==$SBOMLY_VERSION}"
+
+        args=(diff "$OLD" "$NEW" --html "$HTML" --markdown "$MD")
+        [ -n "$FAIL_ON" ] && args+=(--fail-on "$FAIL_ON")
+        [ -n "$TITLE" ] && args+=(--title "$TITLE")
+
+        set +e
+        "$RUNNER_TEMP/sbomly/bin/sbomly" "${args[@]}"
+        code=$?
+        set -e
+
+        [ -f "$MD" ] && cat "$MD" >> "$GITHUB_STEP_SUMMARY"
+        echo "markdown=$MD" >> "$GITHUB_OUTPUT"
+        echo "html=$HTML" >> "$GITHUB_OUTPUT"
+        exit $code
