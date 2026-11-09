@@ -1,5 +1,15 @@
 # Sbomly
 
+[![CI](https://img.shields.io/github/actions/workflow/status/fullstackspectrum/sbomly/build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&color=4f8cff&labelColor=10151d)](https://github.com/fullstackspectrum/sbomly/actions/workflows/build.yml)
+[![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fsbomly%2Fjson&query=%24.info.version&prefix=v&label=pypi&style=for-the-badge&logo=pypi&logoColor=white&color=8fb4ff&labelColor=10151d)](https://pypi.org/project/sbomly/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-f5c84c?style=for-the-badge&logo=python&logoColor=white&labelColor=10151d)](https://pypi.org/project/sbomly/)
+[![Homebrew](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffullstackspectrum%2Fhomebrew-sbomly%2Fmain%2FFormula%2Fsbomly.rb&search=sbomly-%28%5B0-9.%5D%2B%29%5C.tar%5C.gz&replace=v%241&label=homebrew&style=for-the-badge&logo=homebrew&logoColor=white&color=ff8a3d&labelColor=10151d)](https://github.com/fullstackspectrum/homebrew-sbomly)
+[![Docker](https://img.shields.io/docker/image-size/fullstackspectrum/sbomly/latest?style=for-the-badge&logo=docker&logoColor=white&label=docker&color=ff4d5e&labelColor=10151d)](https://hub.docker.com/r/fullstackspectrum/sbomly)
+[![License](https://img.shields.io/badge/license-Apache--2.0-646f7f?style=for-the-badge&labelColor=10151d)](https://github.com/fullstackspectrum/sbomly/blob/main/LICENSE)
+
+[![PyPI downloads](https://img.shields.io/pepy/dt/sbomly?style=for-the-badge&logo=pypi&logoColor=white&label=pypi%20downloads&color=8fb4ff&labelColor=10151d)](https://pepy.tech/projects/sbomly)
+[![Docker pulls](https://img.shields.io/docker/pulls/fullstackspectrum/sbomly?style=for-the-badge&logo=docker&logoColor=white&label=docker%20pulls&color=ff4d5e&labelColor=10151d)](https://hub.docker.com/r/fullstackspectrum/sbomly)
+
 See what changed between two SBOMs, and what deserves a closer look. This is the official container image for [Sbomly](https://github.com/fullstackspectrum/sbomly).
 
 Sbomly compares two SBOMs, CycloneDX or SPDX JSON, and reports which components were added, removed, upgraded or downgraded. It also flags integrity (same version, new digest), copyleft, licence and supplier changes, and `--fail-on` turns any of them into a CI gate.
