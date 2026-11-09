@@ -7,6 +7,9 @@
 [![Docker](https://img.shields.io/docker/image-size/fullstackspectrum/sbomly/latest?style=for-the-badge&logo=docker&logoColor=white&label=docker&color=ff4d5e&labelColor=10151d)](https://hub.docker.com/r/fullstackspectrum/sbomly)
 [![License](https://img.shields.io/badge/license-Apache--2.0-646f7f?style=for-the-badge&labelColor=10151d)](https://github.com/fullstackspectrum/sbomly/blob/main/LICENSE)
 
+[![PyPI downloads](https://img.shields.io/pepy/dt/sbomly?style=for-the-badge&logo=pypi&logoColor=white&label=pypi%20downloads&color=8fb4ff&labelColor=10151d)](https://pepy.tech/projects/sbomly)
+[![Docker pulls](https://img.shields.io/docker/pulls/fullstackspectrum/sbomly?style=for-the-badge&logo=docker&logoColor=white&label=docker%20pulls&color=ff4d5e&labelColor=10151d)](https://hub.docker.com/r/fullstackspectrum/sbomly)
+
 # Sbomly
 
 **See what changed between two SBOMs, and what deserves a closer look.**
