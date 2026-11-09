@@ -1,8 +1,11 @@
-[![Sbomly: what changed between two SBOMs, and what to check.](docs/brand/readme-banner.png)](https://github.com/fullstackspectrum/sbomly)
+[![Sbomly: what changed between two SBOMs, and what to check.](https://raw.githubusercontent.com/fullstackspectrum/sbomly/main/docs/brand/readme-banner.png)](https://github.com/fullstackspectrum/sbomly)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/fullstackspectrum/sbomly/build.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&color=4f8cff&labelColor=10151d)](https://github.com/fullstackspectrum/sbomly/actions/workflows/build.yml)
-[![Python](https://img.shields.io/badge/python-3.10%2B-f5c84c?style=for-the-badge&logo=python&logoColor=white&labelColor=10151d)](pyproject.toml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-646f7f?style=for-the-badge&labelColor=10151d)](LICENSE)
+[![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fsbomly%2Fjson&query=%24.info.version&prefix=v&label=pypi&style=for-the-badge&logo=pypi&logoColor=white&color=8fb4ff&labelColor=10151d)](https://pypi.org/project/sbomly/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-f5c84c?style=for-the-badge&logo=python&logoColor=white&labelColor=10151d)](https://pypi.org/project/sbomly/)
+[![Homebrew](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffullstackspectrum%2Fhomebrew-sbomly%2Fmain%2FFormula%2Fsbomly.rb&search=sbomly-%28%5B0-9.%5D%2B%29%5C.tar%5C.gz&replace=v%241&label=homebrew&style=for-the-badge&logo=homebrew&logoColor=white&color=ff8a3d&labelColor=10151d)](https://github.com/fullstackspectrum/homebrew-sbomly)
+[![Docker](https://img.shields.io/docker/image-size/fullstackspectrum/sbomly/latest?style=for-the-badge&logo=docker&logoColor=white&label=docker&color=ff4d5e&labelColor=10151d)](https://hub.docker.com/r/fullstackspectrum/sbomly)
+[![License](https://img.shields.io/badge/license-Apache--2.0-646f7f?style=for-the-badge&labelColor=10151d)](https://github.com/fullstackspectrum/sbomly/blob/main/LICENSE)
 
 # Sbomly
 
@@ -21,12 +24,19 @@ Sbomly has no runtime dependencies and needs Python 3.10 or later.
 
 > Sbomly is a sibling of [Vulnly](https://github.com/fullstackspectrum/Vulnly) and part of [Full-Stack-Spectrum](https://fullstackspectrum.com/): small open-source tools that turn noisy supply chain data into decisions.
 
-![Sbomly HTML report comparing two releases of payments-api](docs/screenshots/report.png)
+![Sbomly HTML report comparing two releases of payments-api](https://raw.githubusercontent.com/fullstackspectrum/sbomly/main/docs/screenshots/report.png)
 
 ## Install
 
 ```bash
 pipx install sbomly     # or: pip install sbomly
+brew install fullstackspectrum/sbomly/sbomly
+```
+
+Or run the container image, mounting the directory that holds your SBOMs:
+
+```bash
+docker run --rm -t -v "$PWD:/data" fullstackspectrum/sbomly diff old.json new.json
 ```
 
 ## Usage
@@ -37,7 +47,7 @@ sbomly diff old.cdx.json new.cdx.json
 
 Findings come first, most serious at the top, then each kind of component change:
 
-![Terminal summary from sbomly diff](docs/screenshots/terminal.png)
+![Terminal summary from sbomly diff](https://raw.githubusercontent.com/fullstackspectrum/sbomly/main/docs/screenshots/terminal.png)
 
 Write reports alongside the terminal summary:
 
@@ -56,7 +66,7 @@ sbomly diff old.json new.json -u        # 3 lines of context
 sbomly diff old.json new.json -u -U 0   # changes only
 ```
 
-![Unified diff in the terminal from sbomly diff -u](docs/screenshots/terminal-diff.png)
+![Unified diff in the terminal from sbomly diff -u](https://raw.githubusercontent.com/fullstackspectrum/sbomly/main/docs/screenshots/terminal-diff.png)
 
 In a colour terminal, the diff gets an old/new line-number gutter and highlights the words that changed in each `-`/`+` pair. When piped, or with `--no-color`, it's a plain unified diff that `patch` and other diff tools accept.
 
@@ -64,7 +74,7 @@ Each line shows the name, version and licence. A digest or supplier is added onl
 
 The HTML report has the same diff behind a `table` / `diff` toggle, with line numbers and the changed words highlighted. Add `#diff` to the report's URL to open it on the diff view. With `-u`, the Markdown output also gets a ```` ```diff ```` block, which GitHub colours in PR comments.
 
-![The diff view in the HTML report](docs/screenshots/diff.png)
+![The diff view in the HTML report](https://raw.githubusercontent.com/fullstackspectrum/sbomly/main/docs/screenshots/diff.png)
 
 *Screenshots show sample data from `tests/fixtures`. To regenerate them, run `python docs/screenshots/src/render.py`.*
 

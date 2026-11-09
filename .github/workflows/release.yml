@@ -1,0 +1,139 @@
+name: Release
+
+# Publishing a GitHub release (tag vX.Y.Z) ships it everywhere: PyPI first, then
+# the Docker Hub image and the Homebrew tap, which both follow the PyPI version.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Check tag matches package version
+        id: version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version=$(python -c 'import re; print(re.search(r"__version__ = \"(.+)\"", open("sbomly/__init__.py").read())[1])')
+          if [ "${TAG#v}" != "$version" ]; then
+            echo "::error::Release tag $TAG does not match __version__ $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/sbomly/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  docker:
+    needs: [build, pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Log in to Docker Hardened Images
+        uses: docker/login-action@v3
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: fullstackspectrum/sbomly
+          # Pre-releases get only their exact version tag.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          flavor: |
+            latest=${{ !github.event.release.prerelease }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ needs.build.outputs.version }}
+
+  homebrew:
+    needs: [build, pypi]
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # The formula installs the sdist from PyPI, and a new release can take a
+      # minute or two to show up in the JSON API.
+      - name: Render formula
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          for attempt in $(seq 1 20); do
+            if python packaging/homebrew/render_formula.py "$VERSION" > sbomly.rb; then
+              exit 0
+            fi
+            echo "sbomly $VERSION not ready on PyPI yet (attempt $attempt)"
+            sleep 30
+          done
+          echo "::error::sbomly $VERSION did not appear on PyPI"
+          exit 1
+
+      - name: Push to tap
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/fullstackspectrum/homebrew-sbomly.git" tap
+          mkdir -p tap/Formula
+          cp sbomly.rb tap/Formula/sbomly.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/sbomly.rb
+          if git diff --cached --quiet; then
+            echo "Formula already up to date"
+          else
+            git commit -m "sbomly $VERSION"
+            git push origin HEAD:main
+          fi

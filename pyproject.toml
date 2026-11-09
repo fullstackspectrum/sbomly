@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sbomly"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Diff two SBOMs (CycloneDX or SPDX) into a terminal summary, PR comment, JSON or offline HTML report, and gate CI on what changed"
 readme = "README.md"
 license = "Apache-2.0"
@@ -40,6 +40,10 @@ Issues = "https://github.com/fullstackspectrum/sbomly/issues"
 
 [project.scripts]
 sbomly = "sbomly:main"
+
+[tool.setuptools.dynamic]
+# One source of truth: the release workflow checks the tag against __version__.
+version = { attr = "sbomly.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["sbomly*"]
