@@ -43,8 +43,9 @@ The `-t` flag gives you colour in the terminal. Drop it in CI logs.
 | Tag | Points to |
 | --- | --- |
 | `latest` | The newest stable release |
-| `X.Y` (e.g. `0.1`) | The newest patch release in that minor series |
-| `X.Y.Z` (e.g. `0.1.0`) | One exact release |
+| `X` (e.g. `1`) | The newest release in that major series |
+| `X.Y` (e.g. `1.0`) | The newest patch release in that minor series |
+| `X.Y.Z` (e.g. `1.0.0`) | One exact release |
 
 Every tag is built for `linux/amd64` and `linux/arm64`. Pre-releases are published under their exact version only and never move `latest`.
 

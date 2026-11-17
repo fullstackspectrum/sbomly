@@ -134,7 +134,7 @@ Some findings are informational. They're shown, but they never fail a build:
 Sbomly ships as a composite action. It writes the Markdown summary to the job page, and exposes the report paths for a PR comment or artifact upload.
 
 ```yaml
-- uses: fullstackspectrum/sbomly@v0.1.0
+- uses: fullstackspectrum/sbomly@v1
   with:
     old: sbom-main.cdx.json
     new: sbom-pr.cdx.json
