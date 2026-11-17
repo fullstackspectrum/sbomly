@@ -8,8 +8,10 @@ reports/
 .DS_Store
 .vscode/
 .claude/
+CLAUDE.md
 
 # Local test output
 /report.html
 /pr.md
 /diff.json
+/diff.html
