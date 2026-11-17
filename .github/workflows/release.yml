@@ -82,6 +82,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
           flavor: |
             latest=${{ !github.event.release.prerelease }}
       - uses: docker/build-push-action@v6
@@ -92,6 +93,24 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: VERSION=${{ needs.build.outputs.version }}
+
+  # Action users pin to the major version (fullstackspectrum/sbomly@v1), so move
+  # that tag to each stable release, once it is on PyPI, where the action installs from.
+  action-tag:
+    needs: [build, pypi]
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move the major version tag
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          major="v${VERSION%%.*}"
+          git tag -f "$major" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$major"
 
   homebrew:
     needs: [build, pypi]
